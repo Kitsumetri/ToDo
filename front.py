@@ -40,7 +40,6 @@ class App(customtkinter.CTk):
         self.frame_left.grid_rowconfigure(8, minsize=20)
         self.frame_left.grid_rowconfigure(11, minsize=10)
 
-
         # ========================================LEFT==========================================================
 
         # ===============Text_0_left===============
@@ -122,7 +121,8 @@ class App(customtkinter.CTk):
         if is_okay:
             self.get_all_tasks(info)
             check_task = customtkinter.CTkCheckBox(master=self.frame_right,
-                                                   text=info)
+                                                   text=info,
+                                                   textvariable=tkinter.StringVar)
             check_task.grid(row=self.cur_task_numbers, column=0, pady=10, padx=20)
             self.cur_task_numbers += 1
 
@@ -151,7 +151,8 @@ class App(customtkinter.CTk):
         row = 1
         while row <= len(info_arr):
             check_task = customtkinter.CTkCheckBox(master=self.frame_right,
-                                                   text=info_arr[row-1])
+                                                   text=info_arr[row-1],
+                                                   textvariable=tkinter.StringVar)
             check_task.grid(row=row, column=0, pady=10, padx=20)
             row += 1
         return row
