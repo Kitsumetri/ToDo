@@ -1,8 +1,9 @@
 import tkinter
 import tkinter.messagebox
 import customtkinter
+from back import import_saved_info
 
-customtkinter.set_appearance_mode("System")  # Modes: "System" (standard), "Dark", "Light"
+customtkinter.set_appearance_mode("Dark")  # Modes: "System" (standard), "Dark", "Light"
 customtkinter.set_default_color_theme("blue")  # Themes: "blue" (standard), "green", "dark-blue"
 
 
@@ -19,7 +20,7 @@ class App(customtkinter.CTk):
 
         self.protocol("WM_DELETE_WINDOW", self.on_closing)
 
-        # configure grid layout (2x1)
+        # ========configure grid layout========
         self.grid_columnconfigure(1, weight=1)
         self.grid_rowconfigure(0, weight=1)
 
@@ -39,12 +40,6 @@ class App(customtkinter.CTk):
         self.frame_left.grid_rowconfigure(8, minsize=20)
         self.frame_left.grid_rowconfigure(11, minsize=10)
 
-        # ============FRAME_RIGHT=============
-        # configure grid layout (3x7)
-        self.frame_right.rowconfigure(0, weight=1)
-        self.frame_right.rowconfigure(7, weight=10)
-        self.frame_right.columnconfigure(1, weight=1)  # ?
-        self.frame_right.columnconfigure(2, weight=0)
 
         # ========================================LEFT==========================================================
 
@@ -90,17 +85,17 @@ class App(customtkinter.CTk):
 
         # ============SET_DEFAULT_VALUES==============
         self.optionmenu_1.set("Dark")
-        self.cur_task_numbers = 1
+        self.cur_task_numbers = self.import_cur_tasks()
         self.glob_task_numbers = 1
 
     # =========================================Methods==========================================================
 
     @staticmethod
-    def button_event():
+    def button_event() -> None:
         print("Button pressed")
 
     @staticmethod
-    def create_top_level():
+    def create_top_level() -> None:
         window = customtkinter.CTkToplevel()
         window.title("TopLevel")
         window.geometry("400x300")
@@ -114,41 +109,55 @@ class App(customtkinter.CTk):
         slider = customtkinter.CTkSlider(master=window, from_=0, to=100, command=slider_event)
         slider.place(relx=0.5, rely=0.5, anchor=tkinter.CENTER)
 
+    task_array = []
+
+    @staticmethod
+    def get_all_tasks(info: str) -> list:
+        App.task_array += [info]
+        return App.task_array
+
+    def create_task(self) -> None:
+        info, is_okay = self.get_task_info()
+
+        if is_okay:
+            self.get_all_tasks(info)
+            check_task = customtkinter.CTkCheckBox(master=self.frame_right,
+                                                   text=info)
+            check_task.grid(row=self.cur_task_numbers, column=0, pady=10, padx=20)
+            self.cur_task_numbers += 1
+
     @staticmethod
     def delete_task():
         pass
 
-    @staticmethod
-    def change_appearance_mode(new_appearance_mode):
-        customtkinter.set_appearance_mode(new_appearance_mode)
-
-    cur_task_numbers = 1
-    glob_task_numbers = 0
-
-    def create_task(self):
-
-        info = self.get_task_info()
-        if len(info) > 50:
-            self.get_error("Info must not contain more than 50 symbols")
-            return
-
-        if info and (info[0] != " ") and (info[0] != "\n"):
-            check_box = customtkinter.CTkCheckBox(master=self.frame_right,
-                                                  text=info)
-            check_box.grid(row=App.cur_task_numbers, column=0, pady=10, padx=20)
-            App.cur_task_numbers += 1
-
-    @staticmethod
-    def get_task_info():
+    def get_task_info(self) -> (str, bool):
         dialog = customtkinter.CTkInputDialog(master=None,
                                               text="Task info:",
                                               title="Create Task")
         info = dialog.get_input()
-        print("Task info:", info)
-        return info
+        info_is_okay = False
+
+        if info and (info[0] != " ") and (info[0] != "\n"):
+            if len(info) > 50:
+                self.get_error("Info must not contain more than 50 symbols")
+                return info, info_is_okay
+
+            info_is_okay = True
+            return info, info_is_okay
+        return info, info_is_okay
+
+    def import_cur_tasks(self) -> int:
+        info_arr = import_saved_info()
+        row = 1
+        while row <= len(info_arr):
+            check_task = customtkinter.CTkCheckBox(master=self.frame_right,
+                                                   text=info_arr[row-1])
+            check_task.grid(row=row, column=0, pady=10, padx=20)
+            row += 1
+        return row
 
     @staticmethod
-    def get_error(error_type: str):
+    def get_error(error_type: str) -> None:
         window = customtkinter.CTkToplevel()
         window.title("Error message")
         window.geometry("500x100")
@@ -157,10 +166,13 @@ class App(customtkinter.CTk):
                                        text_color="red")
         label.pack(fill="both", expand=True, padx=40, pady=40)
 
-    def on_closing(self):
+    @staticmethod
+    def change_appearance_mode(new_appearance_mode) -> None:
+        customtkinter.set_appearance_mode(new_appearance_mode)
+
+    def on_closing(self) -> None:
         self.destroy()
 
 
 def application_ui():
-    app = App()
-    app.mainloop()
+    App().mainloop()
