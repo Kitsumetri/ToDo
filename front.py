@@ -1,6 +1,6 @@
 import tkinter
-import tkinter.messagebox
 import customtkinter
+import tkinter.messagebox
 from back import import_saved_info
 
 customtkinter.set_appearance_mode("Dark")  # Modes: "System" (standard), "Dark", "Light"
@@ -30,19 +30,38 @@ class App(customtkinter.CTk):
                                                  height=100,
                                                  corner_radius=0)
 
-        self.frame_left.grid(row=0, column=0, sticky="nswe")
-
-        self.frame_right = customtkinter.CTkFrame(master=self)
-        self.frame_right.grid(row=0, column=1, sticky="nswe", padx=20, pady=20)
+        self.frame_left.grid(row=0,
+                             column=0,
+                             sticky="nswe")
 
         self.frame_left.grid_rowconfigure(0, minsize=10)
         self.frame_left.grid_rowconfigure(5, weight=1)
         self.frame_left.grid_rowconfigure(8, minsize=20)
         self.frame_left.grid_rowconfigure(11, minsize=10)
 
+        # ============FRAME_RIGHT=============
+
+        self.frame_right = customtkinter.CTkFrame(master=self)
+        self.frame_right.grid(row=0,
+                              column=1,
+                              sticky="nswe",
+                              padx=20, pady=20)
+
+        self.frame_right.grid_rowconfigure(0, minsize=10)
+
+        # ==========RIGHT_CLICK_MENU==========
+        self.popupMenu = tkinter.Menu(self, tearoff=0)
+        self.popupMenu.add_command(label="Create task",
+                                   command=self.create_task)
+        self.popupMenu.add_command(label="Two",
+                                   command=self.check_cur_tasks)
+        self.popupMenu.add_command(label="Three",
+                                   command=self.check)
+        self.bind("<Button-2>", self.popup)
+
         # ========================================LEFT==========================================================
 
-        # ===============Text_0_left===============
+        # ===============Text_0_left=================
         self.label_1 = customtkinter.CTkLabel(master=self.frame_left,
                                               text="To-Do",
                                               text_font=("Roboto Medium", -24))  # font name and size in px
@@ -56,8 +75,7 @@ class App(customtkinter.CTk):
 
         # ===============Button_2_left===============
         self.button_2 = customtkinter.CTkButton(master=self.frame_left,
-                                                text="Notebook",
-                                                command=self.button_event)
+                                                text="Notebook")
         self.button_2.grid(row=2, column=0, pady=10, padx=20)
 
         # ==================Themes===================
@@ -80,18 +98,24 @@ class App(customtkinter.CTk):
         self.task_button = customtkinter.CTkButton(master=self.frame_right,
                                                    text="Create Task",
                                                    command=self.create_task)
-        self.task_button.grid(row=0, column=1, pady=10, padx=10)
+        self.task_button.grid(row=0, column=1, pady=10, padx=10, sticky='w')
+
+        # ======================================================================================================
 
         # ============SET_DEFAULT_VALUES==============
         self.optionmenu_1.set("Dark")
+
         self.cur_task_numbers = self.import_cur_tasks()
-        self.glob_task_numbers = 1
+        self.cur_task_info = import_saved_info()
+        self.cur_task_value = []
+        self.cur_task_array = {}
+
+        self.cur_check_tasks_array = []
 
     # =========================================Methods==========================================================
 
-    @staticmethod
-    def button_event() -> None:
-        print("Button pressed")
+    def add_task(self, task: customtkinter.CTkCheckBox):
+        self.cur_check_tasks_array.append(task)
 
     @staticmethod
     def create_top_level() -> None:
@@ -108,27 +132,20 @@ class App(customtkinter.CTk):
         slider = customtkinter.CTkSlider(master=window, from_=0, to=100, command=slider_event)
         slider.place(relx=0.5, rely=0.5, anchor=tkinter.CENTER)
 
-    task_array = []
-
-    @staticmethod
-    def get_all_tasks(info: str) -> list:
-        App.task_array += [info]
-        return App.task_array
-
-    def create_task(self) -> None:
+    def create_task(self, mode: str) -> None:
         info, is_okay = self.get_task_info()
 
         if is_okay:
-            self.get_all_tasks(info)
+            self.cur_task_info.append(info)
             check_task = customtkinter.CTkCheckBox(master=self.frame_right,
                                                    text=info,
                                                    textvariable=tkinter.StringVar)
-            check_task.grid(row=self.cur_task_numbers, column=0, pady=10, padx=20)
+            check_task.grid(row=self.cur_task_numbers,
+                            column=0,
+                            pady=10, padx=20,
+                            sticky='w')
+            self.add_task(task=check_task)
             self.cur_task_numbers += 1
-
-    @staticmethod
-    def delete_task():
-        pass
 
     def get_task_info(self) -> (str, bool):
         dialog = customtkinter.CTkInputDialog(master=None,
@@ -139,12 +156,15 @@ class App(customtkinter.CTk):
 
         if info and (info[0] != " ") and (info[0] != "\n"):
             if len(info) > 50:
-                self.get_error("Info must not contain more than 50 symbols")
+                self.get_error(error_type="Info must not contain more than 50 symbols")
                 return info, info_is_okay
 
             info_is_okay = True
             return info, info_is_okay
         return info, info_is_okay
+
+    def check_cur_tasks(self):
+        print(self.cur_check_tasks_array)
 
     def import_cur_tasks(self) -> int:
         info_arr = import_saved_info()
@@ -153,7 +173,7 @@ class App(customtkinter.CTk):
             check_task = customtkinter.CTkCheckBox(master=self.frame_right,
                                                    text=info_arr[row-1],
                                                    textvariable=tkinter.StringVar)
-            check_task.grid(row=row, column=0, pady=10, padx=20)
+            check_task.grid(row=row, column=0, pady=10, padx=20, sticky='w')
             row += 1
         return row
 
@@ -171,9 +191,26 @@ class App(customtkinter.CTk):
     def change_appearance_mode(new_appearance_mode) -> None:
         customtkinter.set_appearance_mode(new_appearance_mode)
 
+    def save(self) -> None:
+
+        with open('save.tds', 'w') as saving_file:
+            for task in self.cur_task_info:
+                saving_file.write(task + '\n')
+        saving_file.close()
+
+    def check(self) -> None:
+        for task_checkbox in self.cur_check_tasks_array:
+            task_checkbox.select()
+
+    def popup(self, event):
+        self.popupMenu.post(event.x_root, event.y_root)
+
     def on_closing(self) -> None:
+        self.save()
         self.destroy()
 
+    # ==========================================================================================================
 
-def application_ui():
+
+def application_ui() -> None:
     App().mainloop()
