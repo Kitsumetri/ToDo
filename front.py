@@ -109,7 +109,6 @@ class App(customtkinter.CTk):
         self.cur_task_info = import_saved_info()
         self.cur_task_value = []
         self.cur_task_array = {}
-
         self.cur_check_tasks_array = []
 
     # =========================================Methods==========================================================
