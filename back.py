@@ -8,7 +8,7 @@ def reformat_file(before: str, after: str) -> None:
     rename(saving_file, base + '.' + after)
 
 
-def import_saved_info() -> list:
+def import_saved_info(mode: str):
     reformat_file(before='tds', after='txt')
     task_array = []
 
@@ -18,7 +18,11 @@ def import_saved_info() -> list:
             if not line:
                 break
             task_array.append(line)
-    saving_file.close()
 
     reformat_file(before='txt', after='tds')
-    return task_array
+    saving_file.close()
+
+    if mode == 'only number':
+        return len(task_array) + 1
+    if mode == 'full information':
+        return task_array
