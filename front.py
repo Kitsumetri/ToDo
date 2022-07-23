@@ -2,6 +2,10 @@ import tkinter
 import customtkinter
 import tkinter.messagebox
 from back import import_saved_info
+from PIL import Image, ImageTk
+from os.path import dirname, realpath
+import emoji
+
 
 customtkinter.set_appearance_mode("Dark")  # Modes: "System" (standard), "Dark", "Light"
 customtkinter.set_default_color_theme("blue")  # Themes: "blue" (standard), "green", "dark-blue"
@@ -9,8 +13,11 @@ customtkinter.set_default_color_theme("blue")  # Themes: "blue" (standard), "gre
 
 class App(customtkinter.CTk):
 
+    # ==STANDARD_VALUES==
     WIDTH = 800
     HEIGHT = 600
+    PATH = dirname(realpath(__file__))
+    image_size = 22
 
     def __init__(self):
         super().__init__()
@@ -58,8 +65,8 @@ class App(customtkinter.CTk):
 
         # ===============Text_0_left=================
         self.label_1 = customtkinter.CTkLabel(master=self.frame_left,
-                                              text="To-Do",
-                                              text_font=("Roboto Medium", -24))  # font name and size in px
+                                              text=emoji.emojize(':notebook:', variant="emoji_type") + 'To-Do List',
+                                              text_font=("Roboto Medium", -28))  # font name and size in px
         self.label_1.grid(row=0, column=0,
                           pady=10, padx=10)
 
@@ -98,12 +105,19 @@ class App(customtkinter.CTk):
         self.label_right.grid(row=0, column=0,
                               pady=10, padx=10)
 
+        self.add_list_image = ImageTk.PhotoImage(
+            Image.open(App.PATH + "/Sprites/add-list.png").resize((App.image_size, App.image_size), Image.LANCZOS))
+
         self.task_button = customtkinter.CTkButton(master=self.frame_right,
                                                    text="Create Task",
+                                                   text_font=("Roboto Medium", -19),
+                                                   fg_color="#9e1965", hover_color="#521032",
+                                                   image=self.add_list_image, compound="right",
+                                                   width=190, height=40,
                                                    command=self.create_task)
-        self.task_button.grid(row=0, column=1,
-                              pady=10, padx=10,
-                              sticky='w')
+        self.task_button.grid(row=0, column=1, columnspan=2,
+                              padx=20, pady=10,
+                              sticky='s')
 
         # ======================================================================================================
 
@@ -113,6 +127,7 @@ class App(customtkinter.CTk):
         self.cur_task_dict = {}  # dict = { Task name: [widget, row, widget.get()] }
         self.cur_task_numbers = import_saved_info(mode='only number')  # just a row
         self.import_cur_tasks()  # command for import savings
+
     # =========================================Methods==========================================================
 
     @staticmethod
@@ -177,10 +192,13 @@ class App(customtkinter.CTk):
         window = customtkinter.CTkToplevel()
         window.title("Error message")
         window.geometry("500x100")
+
         label = customtkinter.CTkLabel(master=window,
                                        text=error_type,
                                        text_color="red")
-        label.pack(fill="both", expand=True, padx=40, pady=40)
+        label.pack(fill="both",
+                   expand=True,
+                   padx=40, pady=40)
 
     @staticmethod
     def change_appearance_mode(new_appearance_mode) -> None:
