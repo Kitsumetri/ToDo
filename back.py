@@ -1,5 +1,6 @@
 from os.path import splitext
 from os import rename
+from typing import Union
 
 
 def reformat_file(before: str, after: str) -> None:
@@ -8,7 +9,15 @@ def reformat_file(before: str, after: str) -> None:
     rename(saving_file, base + '.' + after)
 
 
-def import_saved_info(mode: str):
+def import_saved_info(mode: str) -> Union[int, list, list[str]]:
+
+    if not open('save.tds', 'w'):
+        print(123)
+        if mode == 'only number':
+            return len([])
+        if mode == 'full information':
+            return []
+
     reformat_file(before='tds', after='txt')
     task_array = []
 
