@@ -1,27 +1,21 @@
-from os.path import splitext
+from os.path import splitext, exists
 from os import rename
-from typing import Union
 
 
 def reformat_file(before: str, after: str) -> None:
-    saving_file = 'save.' + before
+    saving_file = 'logs/save.' + before
     base = splitext(saving_file)[0]
     rename(saving_file, base + '.' + after)
 
 
-def import_saved_info(mode: str) -> Union[int, list, list[str]]:
-
-    if not open('save.tds', 'w'):
-        print(123)
-        if mode == 'only number':
-            return len([])
-        if mode == 'full information':
-            return []
+def import_saved_info() -> list:
+    if not (exists('logs/save.tds')):
+        return []
 
     reformat_file(before='tds', after='txt')
     task_array = []
 
-    with open('save.txt', 'r') as saving_file:
+    with open('logs/save.txt', 'r') as saving_file:
         while True:
             line = saving_file.readline().replace('\n', '', 1)
             if not line:
@@ -31,7 +25,4 @@ def import_saved_info(mode: str) -> Union[int, list, list[str]]:
     reformat_file(before='txt', after='tds')
     saving_file.close()
 
-    if mode == 'only number':
-        return len(task_array) + 1
-    if mode == 'full information':
-        return task_array
+    return task_array

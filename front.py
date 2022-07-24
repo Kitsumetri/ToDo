@@ -1,11 +1,10 @@
 import tkinter
-import customtkinter
 import tkinter.messagebox
-from back import import_saved_info
+import customtkinter
+from back import import_saved_info, exists
 from PIL import Image, ImageTk
 from os.path import dirname, realpath
-import emoji
-
+from os import remove
 
 customtkinter.set_appearance_mode("Dark")  # Modes: "System" (standard), "Dark", "Light"
 customtkinter.set_default_color_theme("blue")  # Themes: "blue" (standard), "green", "dark-blue"
@@ -65,7 +64,7 @@ class App(customtkinter.CTk):
 
         # ===============Text_0_left=================
         self.label_1 = customtkinter.CTkLabel(master=self.frame_left,
-                                              text=emoji.emojize(':notebook:', variant="emoji_type") + 'To-Do List',
+                                              text='To-Do List',
                                               text_font=("Roboto Medium", -28))  # font name and size in px
         self.label_1.grid(row=0, column=0,
                           pady=10, padx=10)
@@ -125,8 +124,7 @@ class App(customtkinter.CTk):
         self.optionmenu_1.set("Dark")  # set dark theme
 
         self.cur_task_dict = {}  # dict = { Task name: [widget, row, widget.get()] }
-        self.cur_task_numbers = import_saved_info(mode='only number')  # just a row
-        self.import_cur_tasks()  # command for import savings
+        self.cur_task_numbers = self.import_cur_tasks()  # just a row
 
     # =========================================Methods==========================================================
 
@@ -174,8 +172,8 @@ class App(customtkinter.CTk):
             self.cur_task_dict.update({info: [check_task, self.cur_task_numbers]})
             self.cur_task_numbers += 1
 
-    def import_cur_tasks(self) -> None:
-        info_arr = import_saved_info(mode='full information')
+    def import_cur_tasks(self) -> int:
+        info_arr = import_saved_info()
         row = 1
         while row <= len(info_arr):
             check_task = customtkinter.CTkCheckBox(master=self.frame_right,
@@ -186,6 +184,7 @@ class App(customtkinter.CTk):
                             sticky='w')
             self.cur_task_dict.update({info_arr[row-1]: [check_task, row]})
             row += 1
+        return len(info_arr) + 1
 
     @staticmethod
     def get_error(error_type: str) -> None:
@@ -205,7 +204,13 @@ class App(customtkinter.CTk):
         customtkinter.set_appearance_mode(new_appearance_mode)
 
     def save(self) -> None:
-        with open('save.tds', 'w') as saving_file:
+
+        if self.cur_task_dict == {}:
+            if exists('logs/save.tds'):
+                remove('logs/save.tds')
+            return
+
+        with open('logs/save.tds', 'w') as saving_file:
             for task in self.cur_task_dict.keys():
                 saving_file.write(task + '\n')
         saving_file.close()
