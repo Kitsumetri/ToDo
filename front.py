@@ -1,29 +1,31 @@
 import tkinter
 import tkinter.messagebox
 import customtkinter
+from emoji import emojize
 from back import import_saved_info, exists
 from PIL import Image, ImageTk
 from os.path import dirname, realpath
 from os import remove
 
-customtkinter.set_appearance_mode("Dark")  # Modes: "System" (standard), "Dark", "Light"
-customtkinter.set_default_color_theme("blue")  # Themes: "blue" (standard), "green", "dark-blue"
+customtkinter.set_appearance_mode("Light")  # Modes: "System" (standard), "Dark", "Light"
+customtkinter.set_default_color_theme("green")  # Themes: "blue" (standard), "green", "dark-blue"
 
 
 class App(customtkinter.CTk):
 
     # ==STANDARD_VALUES==
-    WIDTH = 800
-    HEIGHT = 600
+    WIDTH = 640
+    HEIGHT = 580
     PATH = dirname(realpath(__file__))
     image_size = 22
 
     def __init__(self):
         super().__init__()
 
-        self.title("To-Do List")
+        self.title('To-Do List' + emojize(':red_heart:'))
         self.geometry(f"{App.WIDTH}x{App.HEIGHT}")
         self.protocol("WM_DELETE_WINDOW", self.on_closing)
+        self.resizable(True, True)
 
         # ========configure grid layout========
         self.grid_columnconfigure(1, weight=1)
@@ -53,10 +55,10 @@ class App(customtkinter.CTk):
 
         # ==========RIGHT_CLICK_MENU==========
         self.popupMenu = tkinter.Menu(master=self.frame_right, tearoff=0)
+        self.popupMenu.add_command(label="Create task",
+                                   command=self.create_task)
         self.popupMenu.add_command(label="Delete all tasks",
                                    command=self.delete_all_cur_tasks)
-        self.popupMenu.add_command(label="2")
-        self.popupMenu.add_command(label="3")
 
         self.bind("<Button-2>", self.popup)
 
@@ -64,7 +66,7 @@ class App(customtkinter.CTk):
 
         # ===============Text_0_left=================
         self.label_1 = customtkinter.CTkLabel(master=self.frame_left,
-                                              text='To-Do List',
+                                              text='To-Do List' + ' ' + emojize(':sparkles:', variant='emoji_type'),
                                               text_font=("Roboto Medium", -28))  # font name and size in px
         self.label_1.grid(row=0, column=0,
                           pady=10, padx=10)
@@ -110,6 +112,7 @@ class App(customtkinter.CTk):
         self.task_button = customtkinter.CTkButton(master=self.frame_right,
                                                    text="Create Task",
                                                    text_font=("Roboto Medium", -19),
+                                                   text_color='white',
                                                    fg_color="#9e1965", hover_color="#521032",
                                                    image=self.add_list_image, compound="right",
                                                    width=190, height=40,
@@ -120,9 +123,20 @@ class App(customtkinter.CTk):
 
         # ======================================================================================================
 
-        # ============SET_DEFAULT_VALUES==============
-        self.optionmenu_1.set("Dark")  # set dark theme
+        # ============SCROLLBAR==============
+        self.TaskBox = tkinter.Listbox(self.frame_right, activestyle='dotbox')
+        self.TaskBox.grid(row=1, column=0,
+                          columnspan=5,
+                          sticky='nswe')
 
+        self.ctk_textbox_scrollbar = customtkinter.CTkScrollbar(self.frame_right,
+                                                                command=self.TaskBox.yview)
+        self.ctk_textbox_scrollbar.grid(row=1, column=5,
+                                        sticky="ns")
+
+        self.TaskBox.config(yscrollcommand=self.ctk_textbox_scrollbar.set)
+
+        # ============SET_DEFAULT_VALUES==============
         self.cur_task_dict = {}  # dict = { Task name: [widget, row, widget.get()] }
         self.cur_task_numbers = self.import_cur_tasks()  # just a row
 
@@ -160,10 +174,11 @@ class App(customtkinter.CTk):
                 info_is_okay = True
                 return dialog_info, info_is_okay
             return dialog_info, info_is_okay
+
         info, is_okay = get_task_info()
 
         if is_okay:
-            check_task = customtkinter.CTkCheckBox(master=self.frame_right,
+            check_task = customtkinter.CTkCheckBox(master=self.TaskBox,
                                                    text=info,
                                                    textvariable=tkinter.StringVar)
             check_task.grid(row=self.cur_task_numbers, column=0,
@@ -176,7 +191,7 @@ class App(customtkinter.CTk):
         info_arr = import_saved_info()
         row = 1
         while row <= len(info_arr):
-            check_task = customtkinter.CTkCheckBox(master=self.frame_right,
+            check_task = customtkinter.CTkCheckBox(master=self.TaskBox,
                                                    text=info_arr[row-1],
                                                    textvariable=tkinter.StringVar)
             check_task.grid(row=row, column=0,
