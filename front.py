@@ -7,13 +7,12 @@ from PIL import Image, ImageTk
 from os.path import dirname, realpath
 from os import remove
 
-customtkinter.set_appearance_mode("Light")  # Modes: "System" (standard), "Dark", "Light"
-customtkinter.set_default_color_theme("green")  # Themes: "blue" (standard), "green", "dark-blue"
+customtkinter.set_appearance_mode("System")  # Modes: "System" (standard), "Dark", "Light"
+customtkinter.set_default_color_theme("dark-blue")  # Themes: "blue" (standard), "green", "dark-blue"
 
 
 class App(customtkinter.CTk):
 
-    # ==STANDARD_VALUES==
     WIDTH = 640
     HEIGHT = 580
     PATH = dirname(realpath(__file__))
@@ -22,7 +21,7 @@ class App(customtkinter.CTk):
     def __init__(self):
         super().__init__()
 
-        self.title('To-Do List' + emojize(':red_heart:'))
+        self.title('To-Do List' + emojize(':sparkles:'))
         self.geometry(f"{App.WIDTH}x{App.HEIGHT}")
         self.protocol("WM_DELETE_WINDOW", self.on_closing)
         self.resizable(True, True)
@@ -66,7 +65,7 @@ class App(customtkinter.CTk):
 
         # ===============Text_0_left=================
         self.label_1 = customtkinter.CTkLabel(master=self.frame_left,
-                                              text='To-Do List' + ' ' + emojize(':sparkles:', variant='emoji_type'),
+                                              text='To-Do List' + ' ' + emojize(':sparkles:'),
                                               text_font=("Roboto Medium", -28))  # font name and size in px
         self.label_1.grid(row=0, column=0,
                           pady=10, padx=10)
@@ -113,7 +112,6 @@ class App(customtkinter.CTk):
                                                    text="Create Task",
                                                    text_font=("Roboto Medium", -19),
                                                    text_color='white',
-                                                   fg_color="#9e1965", hover_color="#521032",
                                                    image=self.add_list_image, compound="right",
                                                    width=190, height=40,
                                                    command=self.create_task)
@@ -123,19 +121,6 @@ class App(customtkinter.CTk):
 
         # ======================================================================================================
 
-        # ============SCROLLBAR==============
-        self.TaskBox = tkinter.Listbox(self.frame_right, activestyle='dotbox')
-        self.TaskBox.grid(row=1, column=0,
-                          columnspan=5,
-                          sticky='nswe')
-
-        self.ctk_textbox_scrollbar = customtkinter.CTkScrollbar(self.frame_right,
-                                                                command=self.TaskBox.yview)
-        self.ctk_textbox_scrollbar.grid(row=1, column=5,
-                                        sticky="ns")
-
-        self.TaskBox.config(yscrollcommand=self.ctk_textbox_scrollbar.set)
-
         # ============SET_DEFAULT_VALUES==============
         self.cur_task_dict = {}  # dict = { Task name: [widget, row, widget.get()] }
         self.cur_task_numbers = self.import_cur_tasks()  # just a row
@@ -144,6 +129,7 @@ class App(customtkinter.CTk):
 
     @staticmethod
     def create_top_level() -> None:
+        """Create top_level"""
         window = customtkinter.CTkToplevel()
         window.title("TopLevel")
         window.geometry("400x300")
@@ -152,12 +138,14 @@ class App(customtkinter.CTk):
         label.pack(side="top", fill="both", expand=True, padx=40, pady=40)
 
         def slider_event(value):
+            """Check slider value from 0 to 100"""
             print(value)
 
         slider = customtkinter.CTkSlider(master=window, from_=0, to=100, command=slider_event)
         slider.place(relx=0.5, rely=0.5, anchor=tkinter.CENTER)
 
     def create_task(self) -> None:
+        """Create task with its info in TaskBox"""
 
         def get_task_info() -> (str, bool):
             dialog = customtkinter.CTkInputDialog(master=None,
@@ -178,7 +166,7 @@ class App(customtkinter.CTk):
         info, is_okay = get_task_info()
 
         if is_okay:
-            check_task = customtkinter.CTkCheckBox(master=self.TaskBox,
+            check_task = customtkinter.CTkCheckBox(master=self.frame_right,
                                                    text=info,
                                                    textvariable=tkinter.StringVar)
             check_task.grid(row=self.cur_task_numbers, column=0,
@@ -188,10 +176,11 @@ class App(customtkinter.CTk):
             self.cur_task_numbers += 1
 
     def import_cur_tasks(self) -> int:
+        """Import current task info from save.tds"""
         info_arr = import_saved_info()
         row = 1
         while row <= len(info_arr):
-            check_task = customtkinter.CTkCheckBox(master=self.TaskBox,
+            check_task = customtkinter.CTkCheckBox(master=self.frame_right,
                                                    text=info_arr[row-1],
                                                    textvariable=tkinter.StringVar)
             check_task.grid(row=row, column=0,
@@ -203,6 +192,7 @@ class App(customtkinter.CTk):
 
     @staticmethod
     def get_error(error_type: str) -> None:
+        """Create new window with error message"""
         window = customtkinter.CTkToplevel()
         window.title("Error message")
         window.geometry("500x100")
@@ -215,28 +205,31 @@ class App(customtkinter.CTk):
                    padx=40, pady=40)
 
     @staticmethod
-    def change_appearance_mode(new_appearance_mode) -> None:
+    def change_appearance_mode(new_appearance_mode: str) -> None:
+        """Change theme"""
         customtkinter.set_appearance_mode(new_appearance_mode)
 
-    def save(self) -> None:
-
-        if self.cur_task_dict == {}:
-            if exists('logs/save.tds'):
-                remove('logs/save.tds')
-            return
-
-        with open('logs/save.tds', 'w') as saving_file:
-            for task in self.cur_task_dict.keys():
-                saving_file.write(task + '\n')
-        saving_file.close()
-
     def on_closing(self) -> None:
-        self.save()
+        """Method for closing app and save information"""
+        def save() -> None:
+            """Save current tasks' info in save.tds;
+               If no tasks exist then save.tds will be removed"""
+            if self.cur_task_dict == {}:
+                if exists('logs/save.tds'):
+                    remove('logs/save.tds')
+                return
+
+            with open('logs/save.tds', 'w') as saving_file:
+                for task in self.cur_task_dict.keys():
+                    saving_file.write(task + '\n')
+            saving_file.close()
+        save()
         self.destroy()
 
     # ============POPUP_MENU_METHODS==============
 
     def delete_all_cur_tasks(self) -> None:
+        """Delete all tasks' widgets and info in dict"""
         copy_dict = self.cur_task_dict.copy()
 
         for key, values in copy_dict.items():
@@ -246,10 +239,12 @@ class App(customtkinter.CTk):
                     self.cur_task_dict.pop(key)
 
     def popup(self, event) -> None:
+        """Method that allow to use 'right button menu'"""
         self.popupMenu.post(event.x_root, event.y_root)
 
     # ==========================================================================================================
 
 
 def application_ui() -> None:
+    """Start loop for an App"""
     App().mainloop()

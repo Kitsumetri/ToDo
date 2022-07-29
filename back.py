@@ -3,12 +3,15 @@ from os import rename
 
 
 def reformat_file(before: str, after: str) -> None:
+    """Reformat file for reading"""
     saving_file = 'logs/save.' + before
     base = splitext(saving_file)[0]
     rename(saving_file, base + '.' + after)
 
 
 def import_saved_info() -> list:
+    """Give an array with all current task info"""
+
     if not (exists('logs/save.tds')):
         return []
 
