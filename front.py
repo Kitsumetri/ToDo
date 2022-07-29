@@ -7,18 +7,18 @@ from PIL import Image, ImageTk
 from os.path import dirname, realpath
 from os import remove
 
-customtkinter.set_appearance_mode("System")  # Modes: "System" (standard), "Dark", "Light"
-customtkinter.set_default_color_theme("dark-blue")  # Themes: "blue" (standard), "green", "dark-blue"
-
 
 class App(customtkinter.CTk):
+
+    customtkinter.set_appearance_mode("System")  # Modes: "System" (standard), "Dark", "Light"
+    customtkinter.set_default_color_theme("dark-blue")  # Themes: "blue" (standard), "green", "dark-blue"
 
     WIDTH = 640
     HEIGHT = 580
     PATH = dirname(realpath(__file__))
     image_size = 22
 
-    def __init__(self):
+    def __init__(self) -> None:
         super().__init__()
 
         self.title('To-Do List' + emojize(':sparkles:'))
@@ -109,9 +109,7 @@ class App(customtkinter.CTk):
             Image.open(App.PATH + "/Sprites/add-list.png").resize((App.image_size, App.image_size), Image.LANCZOS))
 
         self.task_button = customtkinter.CTkButton(master=self.frame_right,
-                                                   text="Create Task",
-                                                   text_font=("Roboto Medium", -19),
-                                                   text_color='white',
+                                                   text="Create Task", text_font=("Roboto Medium", -19), text_color='white',
                                                    image=self.add_list_image, compound="right",
                                                    width=190, height=40,
                                                    command=self.create_task)
@@ -122,8 +120,9 @@ class App(customtkinter.CTk):
         # ======================================================================================================
 
         # ============SET_DEFAULT_VALUES==============
+        self.optionmenu_1.set("Dark")
         self.cur_task_dict = {}  # dict = { Task name: [widget, row, widget.get()] }
-        self.cur_task_numbers = self.import_cur_tasks()  # just a row
+        self.import_cur_tasks()
 
     # =========================================Methods==========================================================
 
@@ -148,6 +147,7 @@ class App(customtkinter.CTk):
         """Create task with its info in TaskBox"""
 
         def get_task_info() -> (str, bool):
+            """Create a window for reading info and check if info in a correct form """
             dialog = customtkinter.CTkInputDialog(master=None,
                                                   text="Task info:",
                                                   title="Create Task")
@@ -156,7 +156,7 @@ class App(customtkinter.CTk):
 
             if dialog_info and (dialog_info[0] != " ") and (dialog_info[0] != "\n"):
                 if len(dialog_info) > 50:
-                    self.get_error(error_type="Info must not contain more than 50 symbols")
+                    self.get_error(error_type="Info mustn't contain more than 50 symbols")
                     return dialog_info, info_is_okay
 
                 info_is_okay = True
@@ -165,30 +165,43 @@ class App(customtkinter.CTk):
 
         info, is_okay = get_task_info()
 
+        if self.cur_task_dict == {}:
+            row = 1
+        else:
+            row = list(self.cur_task_dict.values())[-1][1] + 1
+
         if is_okay:
             check_task = customtkinter.CTkCheckBox(master=self.frame_right,
                                                    text=info,
                                                    textvariable=tkinter.StringVar)
-            check_task.grid(row=self.cur_task_numbers, column=0,
+            check_task.grid(row=row, column=0,
                             pady=10, padx=20,
                             sticky='w')
-            self.cur_task_dict.update({info: [check_task, self.cur_task_numbers]})
-            self.cur_task_numbers += 1
 
-    def import_cur_tasks(self) -> int:
+            self.cur_task_dict.update({info: [check_task, row, 0]})
+
+    def import_cur_tasks(self) -> None:
         """Import current task info from save.tds"""
-        info_arr = import_saved_info()
+
+        info_arr, event_arr = import_saved_info()
         row = 1
         while row <= len(info_arr):
             check_task = customtkinter.CTkCheckBox(master=self.frame_right,
                                                    text=info_arr[row-1],
                                                    textvariable=tkinter.StringVar)
+
             check_task.grid(row=row, column=0,
                             pady=10, padx=20,
                             sticky='w')
-            self.cur_task_dict.update({info_arr[row-1]: [check_task, row]})
+
+            match event_arr[row-1]:
+                case 0:
+                    check_task.deselect()
+                case 1:
+                    check_task.select()
+
+            self.cur_task_dict.update({info_arr[row-1]: [check_task, row, event_arr[row-1]]})
             row += 1
-        return len(info_arr) + 1
 
     @staticmethod
     def get_error(error_type: str) -> None:
@@ -212,8 +225,17 @@ class App(customtkinter.CTk):
     def on_closing(self) -> None:
         """Method for closing app and save information"""
         def save() -> None:
+
+            def get_check_box_values() -> None:
+                """Update cur_task_dict with widget.get() in values"""
+                for info, values in self.cur_task_dict.items():
+                    values[2] = values[0].get()
+                    self.cur_task_dict.update({info: [value for value in values]})
+
             """Save current tasks' info in save.tds;
                If no tasks exist then save.tds will be removed"""
+
+            get_check_box_values()
             if self.cur_task_dict == {}:
                 if exists('logs/save.tds'):
                     remove('logs/save.tds')
@@ -221,7 +243,7 @@ class App(customtkinter.CTk):
 
             with open('logs/save.tds', 'w') as saving_file:
                 for task in self.cur_task_dict.keys():
-                    saving_file.write(task + '\n')
+                    saving_file.write(task + ' : ' + str(self.cur_task_dict[task][2]) + '\n')
             saving_file.close()
         save()
         self.destroy()
@@ -233,10 +255,8 @@ class App(customtkinter.CTk):
         copy_dict = self.cur_task_dict.copy()
 
         for key, values in copy_dict.items():
-            for value in values:
-                if str(type(value)) == "<class 'customtkinter.widgets.ctk_checkbox.CTkCheckBox'>":
-                    value.destroy()
-                    self.cur_task_dict.pop(key)
+            values[0].destroy()
+            self.cur_task_dict.pop(key)
 
     def popup(self, event) -> None:
         """Method that allow to use 'right button menu'"""
