@@ -2,8 +2,7 @@ import tkinter
 import tkinter.messagebox
 import customtkinter
 from emoji import emojize
-from back import import_saved_info, exists
-from os.path import dirname, realpath
+from back import import_saved_info, exists, realpath, dirname
 from os import remove
 from PIL.Image import open as openIm, ANTIALIAS
 from PIL.ImageTk import PhotoImage
@@ -91,17 +90,13 @@ class App(customtkinter.CTk):
                            pady=10, padx=20)
 
         # ==================Themes===================
-        self.label_mode = customtkinter.CTkLabel(master=self.frame_left, text="Themes:")
-        self.label_mode.grid(row=9, column=0,
-                             pady=0, padx=16,
-                             sticky="w")
+        self.switch_theme = customtkinter.CTkSwitch(master=self.frame_left,
+                                                    text='Dark mode',
+                                                    command=self.change_appearance_mode)
 
-        self.optionmenu_1 = customtkinter.CTkOptionMenu(master=self.frame_left,
-                                                        values=["Dark", "Light"],
-                                                        command=self.change_appearance_mode)
-        self.optionmenu_1.grid(row=10, column=0,
+        self.switch_theme.grid(row=10, column=0,
                                pady=10, padx=20,
-                               sticky="w")
+                               sticky='w')
         # ======================================================================================================
 
         # ========================================RIGHT=========================================================
@@ -126,6 +121,7 @@ class App(customtkinter.CTk):
         # ============SET_DEFAULT_VALUES==============
         self.cur_task_dict = {}  # dict = { Task name: [widget, row, widget.get(), setting_button_widget] }
         self.import_cur_tasks()
+        self.switch_theme.select()
 
     # =========================================Methods==========================================================
 
@@ -236,24 +232,30 @@ class App(customtkinter.CTk):
                    padx=40, pady=40,
                    side=tkinter.TOP)
 
-    def change_appearance_mode(self, new_appearance_mode: str) -> None:
+    def change_appearance_mode(self) -> None:
         """Change theme"""
         def change_images_themes() -> None:
+            """Function that changes all images' version depending on appearance_mode"""
             match customtkinter.get_appearance_mode():
                 case 'Light':
                     self.task_button.configure(image=self.add_list_image_dark, compound="right")
 
-                    for value in self.cur_task_dict.values():
-                        value[3].configure(fg_color='#EBEBEB', hover_color='#EBEBEB',
-                                           image=self.add_setting_image_dark, compound="right")
+                    if self.cur_task_dict != {}:
+                        for value in self.cur_task_dict.values():
+                            value[3].configure(fg_color='#EBEBEB', hover_color='#EBEBEB',
+                                               image=self.add_setting_image_dark, compound="right")
                 case 'Dark':
                     self.task_button.configure(image=self.add_list_image_light, compound="right")
 
-                    for value in self.cur_task_dict.values():
-                        value[3].configure(fg_color='#2B2929', hover_color='#2B2929',
-                                           image=self.add_setting_image_light, compound="right")
+                    if self.cur_task_dict != {}:
+                        for value in self.cur_task_dict.values():
+                            value[3].configure(fg_color='#2B2929', hover_color='#2B2929',
+                                               image=self.add_setting_image_light, compound="right")
 
-        customtkinter.set_appearance_mode(new_appearance_mode)
+        if self.switch_theme.get() == 1:
+            customtkinter.set_appearance_mode('Dark')
+        else:
+            customtkinter.set_appearance_mode('Light')
         change_images_themes()
 
     def on_closing(self) -> None:
