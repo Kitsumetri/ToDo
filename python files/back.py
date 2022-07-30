@@ -1,10 +1,12 @@
-from os.path import splitext, exists
+from os.path import splitext, exists, dirname, realpath
 from os import rename
+
+PATH = dirname(realpath(__file__)).replace('/python files', '', 1)
 
 
 def reformat_file(before: str, after: str) -> None:
     """Reformat file for reading"""
-    saving_file = 'logs/save.' + before
+    saving_file = PATH + '/logs/save.' + before
     base = splitext(saving_file)[0]
     rename(saving_file, base + '.' + after)
 
@@ -12,7 +14,7 @@ def reformat_file(before: str, after: str) -> None:
 def import_saved_info() -> (list, list):
     """Give an array with all current task info"""
 
-    if not (exists('logs/save.tds')):
+    if not (exists(PATH + '/logs/save.tds')):
         return [], []
 
     reformat_file(before='tds', after='txt')
@@ -20,7 +22,7 @@ def import_saved_info() -> (list, list):
     task_array = []
     event_array = []
 
-    with open('logs/save.txt', 'r') as saving_file:
+    with open(PATH + '/logs/save.txt', 'r') as saving_file:
         while True:
             line = saving_file.readline().replace('\n', '', 1)
             if not line:
