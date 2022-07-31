@@ -1,6 +1,7 @@
 import tkinter
 import tkinter.messagebox
 import customtkinter
+from enum import Enum, unique
 from emoji import emojize
 from back import import_saved_info, exists, realpath, dirname
 from os import remove
@@ -8,15 +9,27 @@ from PIL.Image import open as openIm, ANTIALIAS
 from PIL.ImageTk import PhotoImage
 
 
-class App(customtkinter.CTk):
+@unique
+class ButtonStatus(Enum):
+    not_pressed = 0
+    pressed = 1
 
-    WIDTH = 640
-    HEIGHT = 580
+
+class Sprites:
     PATH = dirname(realpath(__file__)).replace('/python files', '', 1)
     image_size = 25
 
+    @staticmethod
+    def download_sprites(path_in_sprite_folder: str):
+        return PhotoImage(openIm(Sprites.PATH + path_in_sprite_folder).resize((25, 25), ANTIALIAS))
+
+
+class App(customtkinter.CTk):
+    WIDTH = 640
+    HEIGHT = 580
+
     customtkinter.set_appearance_mode("Dark")
-    customtkinter.set_default_color_theme(PATH + "/Custom themes/purple.json")
+    customtkinter.set_default_color_theme(Sprites.PATH + "/Custom themes/purple.json")
 
     def __init__(self) -> None:
         super().__init__()
@@ -26,11 +39,12 @@ class App(customtkinter.CTk):
         self.protocol("WM_DELETE_WINDOW", self.on_closing)
         self.resizable(True, True)
 
-        self.add_list_image_light = PhotoImage(openIm(App.PATH + "/Sprites/Light/add-list.png").resize((App.image_size, App.image_size), ANTIALIAS))
-        self.add_list_image_dark = PhotoImage(openIm(App.PATH + "/Sprites/Dark/add-list.png").resize((App.image_size, App.image_size), ANTIALIAS))
+        # ========download pics========
+        self.add_list_image_light = Sprites.download_sprites("/Sprites/Light/add-list.png")
+        self.add_list_image_dark = Sprites.download_sprites("/Sprites/Dark/add-list.png")
 
-        self.add_setting_image_light = PhotoImage(openIm(App.PATH + "/Sprites/Light/settings.png").resize((App.image_size, App.image_size), ANTIALIAS))
-        self.add_setting_image_dark = PhotoImage(openIm(App.PATH + "/Sprites/Dark/settings.png").resize((App.image_size, App.image_size), ANTIALIAS))
+        self.add_settings_image_light = Sprites.download_sprites("/Sprites/Light/settings.png")
+        self.add_settings_image_dark = Sprites.download_sprites("/Sprites/Dark/settings.png")
 
         # ========configure grid layout========
         self.grid_columnconfigure(1, weight=1)
@@ -60,10 +74,14 @@ class App(customtkinter.CTk):
 
         # ==========RIGHT_CLICK_MENU==========
         self.popupMenu = tkinter.Menu(master=self.frame_right, tearoff=0)
+
         self.popupMenu.add_command(label="Create task",
                                    command=self.create_task)
         self.popupMenu.add_command(label="Delete all tasks",
                                    command=self.delete_all_cur_tasks)
+        self.popupMenu.add_separator()
+        self.popupMenu.add_command(label="Exit",
+                                   command=self.on_closing)
 
         self.bind("<Button-2>", self.popup)
 
@@ -166,26 +184,28 @@ class App(customtkinter.CTk):
         match customtkinter.get_appearance_mode():
             case 'Light':
                 task_settings_button.configure(fg_color='#EBEBEB', hover_color='#EBEBEB',
-                                               image=self.add_setting_image_dark, compound="right")
+                                               image=self.add_settings_image_dark, compound="right")
             case 'Dark':
                 task_settings_button.configure(fg_color='#2B2929', hover_color='#2B2929',
-                                               image=self.add_setting_image_light, compound="right")
+                                               image=self.add_settings_image_light, compound="right")
 
         match event:
-            case 0:
+            case ButtonStatus.not_pressed.value:
                 check_task.deselect()
-            case 1:
+            case ButtonStatus.pressed.value:
                 check_task.select()
 
         self.cur_task_dict.update({info: [check_task, row, event, task_settings_button]})
 
     def create_task(self) -> None:
         """Create task with its info in TaskBox"""
+
         def get_task_info() -> (str, bool):
             """Create a window for reading info and check if info in a correct form """
             dialog = customtkinter.CTkInputDialog(master=None,
                                                   text="Task info:",
                                                   title="Create Task")
+
             dialog_info = dialog.get_input()
             info_is_okay = False
 
@@ -214,7 +234,7 @@ class App(customtkinter.CTk):
         info_arr, event_arr = import_saved_info()
         row = 1
         while row <= len(info_arr):
-            self.place_task_widget(info=info_arr[row-1], row=row, event=event_arr[row-1])
+            self.place_task_widget(info=info_arr[row - 1], row=row, event=event_arr[row - 1])
             row += 1
 
     @staticmethod
@@ -234,8 +254,10 @@ class App(customtkinter.CTk):
 
     def change_appearance_mode(self) -> None:
         """Change theme"""
+
         def change_images_themes() -> None:
             """Function that changes all images' version depending on appearance_mode"""
+
             match customtkinter.get_appearance_mode():
                 case 'Light':
                     self.task_button.configure(image=self.add_list_image_dark, compound="right")
@@ -243,26 +265,29 @@ class App(customtkinter.CTk):
                     if self.cur_task_dict != {}:
                         for value in self.cur_task_dict.values():
                             value[3].configure(fg_color='#EBEBEB', hover_color='#EBEBEB',
-                                               image=self.add_setting_image_dark, compound="right")
+                                               image=self.add_settings_image_dark, compound="right")
                 case 'Dark':
                     self.task_button.configure(image=self.add_list_image_light, compound="right")
 
                     if self.cur_task_dict != {}:
                         for value in self.cur_task_dict.values():
                             value[3].configure(fg_color='#2B2929', hover_color='#2B2929',
-                                               image=self.add_setting_image_light, compound="right")
+                                               image=self.add_settings_image_light, compound="right")
 
-        if self.switch_theme.get() == 1:
+        if self.switch_theme.get() == ButtonStatus.pressed.value:
             customtkinter.set_appearance_mode('Dark')
         else:
             customtkinter.set_appearance_mode('Light')
+
         change_images_themes()
 
     def on_closing(self) -> None:
         """Method for closing app and saving information"""
+
         def save() -> None:
             """Save current tasks' info in save.tds;
                If no tasks exist then save.tds will be removed"""
+
             def get_check_box_values() -> None:
                 """Update cur_task_dict with widget.get() in values"""
 
@@ -272,14 +297,15 @@ class App(customtkinter.CTk):
 
             get_check_box_values()
             if self.cur_task_dict == {}:
-                if exists(App.PATH + '/logs/save.tds'):
-                    remove(App.PATH + '/logs/save.tds')
+                if exists(Sprites.PATH + '/logs/save.tds'):
+                    remove(Sprites.PATH + '/logs/save.tds')
                 return
 
-            with open(App.PATH + '/logs/save.tds', 'w') as saving_file:
+            with open(Sprites.PATH + '/logs/save.tds', 'w') as saving_file:
                 for task in self.cur_task_dict.keys():
                     saving_file.write(task + ' : ' + str(self.cur_task_dict[task][2]) + '\n')
             saving_file.close()
+
         save()
         self.destroy()
 
