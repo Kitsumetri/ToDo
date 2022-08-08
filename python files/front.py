@@ -7,6 +7,7 @@ from back import import_saved_info, exists, realpath, dirname
 from os import remove
 from PIL.Image import open as openIm, ANTIALIAS
 from PIL.ImageTk import PhotoImage
+from dataclasses import dataclass
 
 
 @unique
@@ -15,12 +16,22 @@ class ButtonStatus(Enum):
     pressed = 1
 
 
+@dataclass
+class TaskData:
+    """Class for saving info about widget and tasks"""
+    task_name: str
+    task_widget: customtkinter.CTkCheckBox
+    widget_row: int
+    task_widget_event: int
+    delete_widget_button: customtkinter.CTkButton
+
+
 class Sprites:
     PATH = dirname(realpath(__file__)).replace('/python files', '', 1)
     image_size = 25
 
     @staticmethod
-    def download_sprites(path_in_sprite_folder: str):
+    def download_sprites(path_in_sprite_folder: str) -> PhotoImage:
         return PhotoImage(openIm(Sprites.PATH + path_in_sprite_folder).resize((25, 25), ANTIALIAS))
 
 
@@ -39,18 +50,19 @@ class App(customtkinter.CTk):
         self.protocol("WM_DELETE_WINDOW", self.on_closing)
         self.resizable(True, True)
 
-        # ========download pics========
+        # region Sprite downloading
         self.add_list_image_light = Sprites.download_sprites("/Sprites/Light/add-list.png")
         self.add_list_image_dark = Sprites.download_sprites("/Sprites/Dark/add-list.png")
 
         self.add_settings_image_light = Sprites.download_sprites("/Sprites/Light/settings.png")
         self.add_settings_image_dark = Sprites.download_sprites("/Sprites/Dark/settings.png")
+        # endregion
 
         # ========configure grid layout========
         self.grid_columnconfigure(1, weight=1)
         self.grid_rowconfigure(0, weight=1)
 
-        # ============FRAME_LEFT==============
+        # region Frame left
         self.frame_left = customtkinter.CTkFrame(master=self,
                                                  width=200, height=100,
                                                  corner_radius=0)
@@ -62,17 +74,18 @@ class App(customtkinter.CTk):
         self.frame_left.grid_rowconfigure(5, weight=1)
         self.frame_left.grid_rowconfigure(8, minsize=20)
         self.frame_left.grid_rowconfigure(11, minsize=10)
+        # endregion
 
-        # ============FRAME_RIGHT=============
-
+        # region Frame right init
         self.frame_right = customtkinter.CTkFrame(master=self)
         self.frame_right.grid(row=0, column=1,
                               padx=20, pady=20,
                               sticky="nswe")
 
         self.frame_right.grid_rowconfigure(index=0, minsize=10)
+        # endregion
 
-        # ==========RIGHT_CLICK_MENU==========
+        # region Popup_menu
         self.popupMenu = tkinter.Menu(master=self.frame_right, tearoff=0)
 
         self.popupMenu.add_command(label="Create task",
@@ -84,9 +97,9 @@ class App(customtkinter.CTk):
                                    command=self.on_closing)
 
         self.bind("<Button-2>", self.popup)
+        # endregion
 
-        # ========================================LEFT==========================================================
-
+        # region Frame left widgets
         # ===============Text_0_left=================
         self.label_1 = customtkinter.CTkLabel(master=self.frame_left,
                                               text='To-Do List ' + emojize(':sparkles:'),
@@ -115,10 +128,9 @@ class App(customtkinter.CTk):
         self.switch_theme.grid(row=10, column=0,
                                pady=10, padx=20,
                                sticky='w')
-        # ======================================================================================================
+        # endregion
 
-        # ========================================RIGHT=========================================================
-
+        # region Frame right widgets
         self.label_right = customtkinter.CTkLabel(master=self.frame_right,
                                                   text="Current Tasks " + emojize(':check_mark_button:'),
                                                   text_font=("Roboto Medium", -22))
@@ -134,12 +146,13 @@ class App(customtkinter.CTk):
                               padx=20, pady=10,
                               sticky='s')
 
-        # ======================================================================================================
+        # endregion
 
-        # ============SET_DEFAULT_VALUES==============
-        self.cur_task_dict = {}  # dict = { Task name: [widget, row, widget.get(), setting_button_widget] }
+        # region Default values
+        self.cur_task_array = []
         self.import_cur_tasks()
         self.switch_theme.select()
+        # endregion
 
     # =========================================Methods==========================================================
 
@@ -195,7 +208,9 @@ class App(customtkinter.CTk):
             case ButtonStatus.pressed.value:
                 check_task.select()
 
-        self.cur_task_dict.update({info: [check_task, row, event, task_settings_button]})
+        self.cur_task_array.append(TaskData(task_name=info, task_widget=check_task,
+                                            widget_row=row, task_widget_event=event,
+                                            delete_widget_button=task_settings_button))
 
     def create_task(self) -> None:
         """Create task with its info in TaskBox"""
@@ -220,10 +235,10 @@ class App(customtkinter.CTk):
 
         info, is_okay = get_task_info()
 
-        if self.cur_task_dict == {}:
+        if not self.cur_task_array:
             row = 1
         else:
-            row = list(self.cur_task_dict.values())[-1][1] + 1  # take last num in a dict.values[row] + 1
+            row = self.cur_task_array[-1].widget_row + 1
 
         if is_okay:
             self.place_task_widget(info=info, row=row, event=0)
@@ -262,17 +277,18 @@ class App(customtkinter.CTk):
                 case 'Light':
                     self.task_button.configure(image=self.add_list_image_dark, compound="right")
 
-                    if self.cur_task_dict != {}:
-                        for value in self.cur_task_dict.values():
-                            value[3].configure(fg_color='#EBEBEB', hover_color='#EBEBEB',
-                                               image=self.add_settings_image_dark, compound="right")
+                    if self.cur_task_array:
+                        for data in self.cur_task_array:
+                            data.delete_widget_button.configure(fg_color='#EBEBEB', hover_color='#EBEBEB',
+                                                                image=self.add_settings_image_dark, compound="right")
+
                 case 'Dark':
                     self.task_button.configure(image=self.add_list_image_light, compound="right")
 
-                    if self.cur_task_dict != {}:
-                        for value in self.cur_task_dict.values():
-                            value[3].configure(fg_color='#2B2929', hover_color='#2B2929',
-                                               image=self.add_settings_image_light, compound="right")
+                    if self.cur_task_array:
+                        for data in self.cur_task_array:
+                            data.delete_widget_button.configure(fg_color='#2B2929', hover_color='#2B2929',
+                                                                image=self.add_settings_image_light, compound="right")
 
         if self.switch_theme.get() == ButtonStatus.pressed.value:
             customtkinter.set_appearance_mode('Dark')
@@ -291,19 +307,18 @@ class App(customtkinter.CTk):
             def get_check_box_values() -> None:
                 """Update cur_task_dict with widget.get() in values"""
 
-                for info, values in self.cur_task_dict.items():
-                    values[2] = values[0].get()
-                    self.cur_task_dict.update({info: [value for value in values]})
+                for t_data in self.cur_task_array:
+                    t_data.task_widget_event = t_data.task_widget.get()
 
             get_check_box_values()
-            if self.cur_task_dict == {}:
+            if not self.cur_task_array:
                 if exists(Sprites.PATH + '/logs/save.tds'):
                     remove(Sprites.PATH + '/logs/save.tds')
                 return
 
             with open(Sprites.PATH + '/logs/save.tds', 'w') as saving_file:
-                for task in self.cur_task_dict.keys():
-                    saving_file.write(task + ' : ' + str(self.cur_task_dict[task][2]) + '\n')
+                for data in self.cur_task_array:
+                    saving_file.write(data.task_name + ' : ' + str(data.task_widget_event) + '\n')
             saving_file.close()
 
         save()
@@ -312,18 +327,22 @@ class App(customtkinter.CTk):
     # ============POPUP_MENU_METHODS==============
     def delete_all_cur_tasks(self) -> None:
         """Delete all tasks' widgets and info in a dict"""
-        copy_dict = self.cur_task_dict.copy()
+        # copy_dict = self.cur_task_dict.copy()
 
-        for key, values in copy_dict.items():
-            values[0].destroy()
-            values[3].destroy()
-            self.cur_task_dict.pop(key)
+        # for key, values in copy_dict.items():
+        #     values[0].destroy()
+        #     values[3].destroy()
+        #     self.cur_task_dict.pop(key)
+
+        for data in self.cur_task_array:
+            data.task_widget.destroy()
+            data.delete_widget_button.destroy()
+
+        self.cur_task_array.clear()
 
     def popup(self, event) -> None:
         """Method that allow to use 'right button menu'"""
         self.popupMenu.post(event.x_root, event.y_root)
-
-    # ==========================================================================================================
 
 
 def application_ui() -> None:

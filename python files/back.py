@@ -12,7 +12,7 @@ def reformat_file(before: str, after: str) -> None:
 
 
 def import_saved_info() -> (list, list):
-    """Give an array with all current task info"""
+    """Give an array №1 with all current task info and give array №2 with task events"""
 
     if not (exists(PATH + '/logs/save.tds')):
         return [], []
