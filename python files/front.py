@@ -22,11 +22,12 @@ class TaskData:
     task_name: str
     task_widget: customtkinter.CTkCheckBox
     widget_row: int
-    task_widget_event: int
+    task_widget_event: bool
     delete_widget_button: customtkinter.CTkButton
 
 
 class Sprites:
+    """Class for sprite's info and downloading"""
     PATH = dirname(realpath(__file__)).replace('/python files', '', 1)
     image_size = 25
 
@@ -58,11 +59,12 @@ class App(customtkinter.CTk):
         self.add_settings_image_dark = Sprites.download_sprites("/Sprites/Dark/settings.png")
         # endregion
 
-        # ========configure grid layout========
+        # region Layout configuring
         self.grid_columnconfigure(1, weight=1)
         self.grid_rowconfigure(0, weight=1)
+        # endregion
 
-        # region Frame left
+        # region Frame left init
         self.frame_left = customtkinter.CTkFrame(master=self,
                                                  width=200, height=100,
                                                  corner_radius=0)
@@ -74,7 +76,7 @@ class App(customtkinter.CTk):
         self.frame_left.grid_rowconfigure(5, weight=1)
         self.frame_left.grid_rowconfigure(8, minsize=20)
         self.frame_left.grid_rowconfigure(11, minsize=10)
-        # endregion
+        # endregion ш
 
         # region Frame right init
         self.frame_right = customtkinter.CTkFrame(master=self)
@@ -173,12 +175,11 @@ class App(customtkinter.CTk):
         slider = customtkinter.CTkSlider(master=window, from_=0, to=100, command=slider_event)
         slider.place(relx=0.5, rely=0.5, anchor=tkinter.CENTER)
 
-    @staticmethod
-    def button_event() -> None:
-        print('Button pressed')
+    def delete_task(self, row: int) -> None:
+        pass
 
     def place_task_widget(self, info: str, row: int, event: int) -> None:
-        """Place widget on a screen and add widget in a task dict"""
+        """Place widget on a screen and add widget in a task array"""
 
         check_task = customtkinter.CTkCheckBox(master=self.frame_right,
                                                text=info, textvariable=tkinter.StringVar)
@@ -186,21 +187,21 @@ class App(customtkinter.CTk):
                         pady=10, padx=20,
                         sticky='w')
 
-        task_settings_button = customtkinter.CTkButton(master=self.frame_right,
-                                                       text='',
-                                                       height=25, width=25,
-                                                       command=self.button_event)
-        task_settings_button.grid(row=row, column=2,
-                                  pady=10, padx=20,
-                                  sticky='e')
+        task_delete_button = customtkinter.CTkButton(master=self.frame_right,
+                                                     text='',
+                                                     height=25, width=25)
+
+        task_delete_button.grid(row=row, column=2,
+                                pady=10, padx=20,
+                                sticky='e')
 
         match customtkinter.get_appearance_mode():
             case 'Light':
-                task_settings_button.configure(fg_color='#EBEBEB', hover_color='#EBEBEB',
-                                               image=self.add_settings_image_dark, compound="right")
+                task_delete_button.configure(fg_color='#EBEBEB', hover_color='#EBEBEB',
+                                             image=self.add_settings_image_dark, compound="right")
             case 'Dark':
-                task_settings_button.configure(fg_color='#2B2929', hover_color='#2B2929',
-                                               image=self.add_settings_image_light, compound="right")
+                task_delete_button.configure(fg_color='#2B2929', hover_color='#2B2929',
+                                             image=self.add_settings_image_light, compound="right")
 
         match event:
             case ButtonStatus.not_pressed.value:
@@ -209,8 +210,11 @@ class App(customtkinter.CTk):
                 check_task.select()
 
         self.cur_task_array.append(TaskData(task_name=info, task_widget=check_task,
-                                            widget_row=row, task_widget_event=event,
-                                            delete_widget_button=task_settings_button))
+                                            widget_row=row, task_widget_event=bool(event),
+                                            delete_widget_button=task_delete_button))
+
+        task_delete_button.configure(command=lambda: self.delete_task(row))
+        setattr(self.cur_task_array[-1], 'delete_widget_button', task_delete_button)
 
     def create_task(self) -> None:
         """Create task with its info in TaskBox"""
@@ -305,10 +309,10 @@ class App(customtkinter.CTk):
                If no tasks exist then save.tds will be removed"""
 
             def get_check_box_values() -> None:
-                """Update cur_task_dict with widget.get() in values"""
+                """Update task array with widget.get() in values"""
 
                 for t_data in self.cur_task_array:
-                    t_data.task_widget_event = t_data.task_widget.get()
+                    t_data.task_widget_event = bool(t_data.task_widget.get())
 
             get_check_box_values()
             if not self.cur_task_array:
@@ -318,21 +322,15 @@ class App(customtkinter.CTk):
 
             with open(Sprites.PATH + '/logs/save.tds', 'w') as saving_file:
                 for data in self.cur_task_array:
-                    saving_file.write(data.task_name + ' : ' + str(data.task_widget_event) + '\n')
+                    saving_file.write(data.task_name + ' : ' + str(int(data.task_widget_event)) + '\n')
             saving_file.close()
 
-        save()
+        # save()
         self.destroy()
 
     # ============POPUP_MENU_METHODS==============
     def delete_all_cur_tasks(self) -> None:
-        """Delete all tasks' widgets and info in a dict"""
-        # copy_dict = self.cur_task_dict.copy()
-
-        # for key, values in copy_dict.items():
-        #     values[0].destroy()
-        #     values[3].destroy()
-        #     self.cur_task_dict.pop(key)
+        """Delete all tasks' widgets and info"""
 
         for data in self.cur_task_array:
             data.task_widget.destroy()
