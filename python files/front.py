@@ -38,7 +38,7 @@ class Sprites:
 
 class App(customtkinter.CTk):
     WIDTH = 640
-    HEIGHT = 580
+    HEIGHT = 600
 
     customtkinter.set_appearance_mode("Dark")
     customtkinter.set_default_color_theme(Sprites.PATH + "/Custom themes/purple.json")
@@ -55,8 +55,8 @@ class App(customtkinter.CTk):
         self.add_list_image_light = Sprites.download_sprites("/Sprites/Light/add-list.png")
         self.add_list_image_dark = Sprites.download_sprites("/Sprites/Dark/add-list.png")
 
-        self.add_settings_image_light = Sprites.download_sprites("/Sprites/Light/settings.png")
-        self.add_settings_image_dark = Sprites.download_sprites("/Sprites/Dark/settings.png")
+        self.add_delete_image_light = Sprites.download_sprites("/Sprites/Light/settings.png")
+        self.add_delete_image_dark = Sprites.download_sprites("/Sprites/Dark/settings.png")
         # endregion
 
         # region Layout configuring
@@ -176,10 +176,17 @@ class App(customtkinter.CTk):
         slider.place(relx=0.5, rely=0.5, anchor=tkinter.CENTER)
 
     def delete_task(self, row: int) -> None:
-        pass
+        for data in self.cur_task_array:
+            if data.widget_row == row:
+                data.task_widget.destroy()
+                data.delete_widget_button.destroy()
+                self.cur_task_array.remove(data)
 
     def place_task_widget(self, info: str, row: int, event: int) -> None:
         """Place widget on a screen and add widget in a task array"""
+
+        if len(self.cur_task_array) > 11:
+            return
 
         check_task = customtkinter.CTkCheckBox(master=self.frame_right,
                                                text=info, textvariable=tkinter.StringVar)
@@ -198,10 +205,10 @@ class App(customtkinter.CTk):
         match customtkinter.get_appearance_mode():
             case 'Light':
                 task_delete_button.configure(fg_color='#EBEBEB', hover_color='#EBEBEB',
-                                             image=self.add_settings_image_dark, compound="right")
+                                             image=self.add_delete_image_dark, compound="right")
             case 'Dark':
                 task_delete_button.configure(fg_color='#2B2929', hover_color='#2B2929',
-                                             image=self.add_settings_image_light, compound="right")
+                                             image=self.add_delete_image_light, compound="right")
 
         match event:
             case ButtonStatus.not_pressed.value:
@@ -284,7 +291,7 @@ class App(customtkinter.CTk):
                     if self.cur_task_array:
                         for data in self.cur_task_array:
                             data.delete_widget_button.configure(fg_color='#EBEBEB', hover_color='#EBEBEB',
-                                                                image=self.add_settings_image_dark, compound="right")
+                                                                image=self.add_delete_image_dark, compound="right")
 
                 case 'Dark':
                     self.task_button.configure(image=self.add_list_image_light, compound="right")
@@ -292,7 +299,7 @@ class App(customtkinter.CTk):
                     if self.cur_task_array:
                         for data in self.cur_task_array:
                             data.delete_widget_button.configure(fg_color='#2B2929', hover_color='#2B2929',
-                                                                image=self.add_settings_image_light, compound="right")
+                                                                image=self.add_delete_image_light, compound="right")
 
         if self.switch_theme.get() == ButtonStatus.pressed.value:
             customtkinter.set_appearance_mode('Dark')
@@ -325,7 +332,7 @@ class App(customtkinter.CTk):
                     saving_file.write(data.task_name + ' : ' + str(int(data.task_widget_event)) + '\n')
             saving_file.close()
 
-        # save()
+        save()
         self.destroy()
 
     # ============POPUP_MENU_METHODS==============
