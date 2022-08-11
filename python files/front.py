@@ -1,39 +1,8 @@
 import tkinter
 import tkinter.messagebox
-import customtkinter
-from enum import Enum, unique
 from emoji import emojize
-from back import import_saved_info, exists, realpath, dirname
+from back import import_saved_info, exists, TaskData, Sprites, ButtonStatus, customtkinter, PhotoImage
 from os import remove
-from PIL.Image import open as openIm, ANTIALIAS
-from PIL.ImageTk import PhotoImage
-from dataclasses import dataclass
-
-
-@unique
-class ButtonStatus(Enum):
-    not_pressed = 0
-    pressed = 1
-
-
-@dataclass
-class TaskData:
-    """Class for saving info about widget and tasks"""
-    task_name: str
-    task_widget: customtkinter.CTkCheckBox
-    widget_row: int
-    task_widget_event: bool
-    delete_widget_button: customtkinter.CTkButton
-
-
-class Sprites:
-    """Class for sprite's info and downloading"""
-    PATH = dirname(realpath(__file__)).replace('/python files', '', 1)
-    image_size = 25
-
-    @staticmethod
-    def download_sprites(path_in_sprite_folder: str) -> PhotoImage:
-        return PhotoImage(openIm(Sprites.PATH + path_in_sprite_folder).resize((25, 25), ANTIALIAS))
 
 
 class App(customtkinter.CTk):
@@ -46,17 +15,17 @@ class App(customtkinter.CTk):
     def __init__(self) -> None:
         super().__init__()
 
-        self.title('Soft Caramel Table' + emojize(':sparkles:'))
+        self.title('TODO' + emojize(':sparkles:'))
         self.geometry(f"{App.WIDTH}x{App.HEIGHT}")
         self.protocol("WM_DELETE_WINDOW", self.on_closing)
-        self.resizable(True, True)
+        self.resizable(False, False)
 
         # region Sprite downloading
         self.add_list_image_light = Sprites.download_sprites("/Sprites/Light/add-list.png")
         self.add_list_image_dark = Sprites.download_sprites("/Sprites/Dark/add-list.png")
 
-        self.add_delete_image_light = Sprites.download_sprites("/Sprites/Light/settings.png")
-        self.add_delete_image_dark = Sprites.download_sprites("/Sprites/Dark/settings.png")
+        self.add_setting_image_light = Sprites.download_sprites("/Sprites/Light/settings.png")
+        self.add_setting_image_dark = Sprites.download_sprites("/Sprites/Dark/settings.png")
         # endregion
 
         # region Layout configuring
@@ -87,7 +56,8 @@ class App(customtkinter.CTk):
         self.frame_right.grid_rowconfigure(index=0, minsize=10)
         # endregion
 
-        # region Popup_menu
+        # region Popup_menu frame right
+
         self.popupMenu = tkinter.Menu(master=self.frame_right, tearoff=0)
 
         self.popupMenu.add_command(label="Create task",
@@ -99,7 +69,8 @@ class App(customtkinter.CTk):
                                    command=self.on_closing)
 
         self.bind("<Button-2>", self.popup)
-        # endregion
+
+        # endregion_f
 
         # region Frame left widgets
         # ===============Text_0_left=================
@@ -111,8 +82,7 @@ class App(customtkinter.CTk):
 
         # ===============Button_1_left===============
         self.button_1 = customtkinter.CTkButton(master=self.frame_left,
-                                                text="Global tasks",
-                                                command=self.create_top_level)
+                                                text="Global tasks")
         self.button_1.grid(row=1, column=0,
                            pady=10, padx=20)
 
@@ -157,31 +127,6 @@ class App(customtkinter.CTk):
         # endregion
 
     # =========================================Methods==========================================================
-
-    @staticmethod
-    def create_top_level() -> None:
-        """Create top_level"""
-        window = customtkinter.CTkToplevel()
-        window.title("TopLevel")
-        window.geometry("400x300")
-        label = customtkinter.CTkLabel(master=window,
-                                       text="Add something")
-        label.pack(side="top", fill="both", expand=True, padx=40, pady=40)
-
-        def slider_event(value):
-            """Check slider value from 0 to 100"""
-            print(value)
-
-        slider = customtkinter.CTkSlider(master=window, from_=0, to=100, command=slider_event)
-        slider.place(relx=0.5, rely=0.5, anchor=tkinter.CENTER)
-
-    def delete_task(self, row: int) -> None:
-        for data in self.cur_task_array:
-            if data.widget_row == row:
-                data.task_widget.destroy()
-                data.delete_widget_button.destroy()
-                self.cur_task_array.remove(data)
-
     def place_task_widget(self, info: str, row: int, event: int) -> None:
         """Place widget on a screen and add widget in a task array"""
 
@@ -194,21 +139,23 @@ class App(customtkinter.CTk):
                         pady=10, padx=20,
                         sticky='w')
 
-        task_delete_button = customtkinter.CTkButton(master=self.frame_right,
-                                                     text='',
-                                                     height=25, width=25)
+        task_setting_button = customtkinter.CTkButton(master=self.frame_right,
+                                                      text='',
+                                                      height=25, width=25)
 
-        task_delete_button.grid(row=row, column=2,
-                                pady=10, padx=20,
-                                sticky='e')
+        task_setting_button.grid(row=row, column=2,
+                                 pady=10, padx=20,
+                                 sticky='e')
+
+        def change_image_theme(icon_image: PhotoImage, color: str) -> None:
+            task_setting_button.configure(fg_color=color, hover_color=color,
+                                          image=icon_image, compound="right")
 
         match customtkinter.get_appearance_mode():
             case 'Light':
-                task_delete_button.configure(fg_color='#EBEBEB', hover_color='#EBEBEB',
-                                             image=self.add_delete_image_dark, compound="right")
+                change_image_theme(icon_image=self.add_setting_image_dark, color='#EBEBEB')
             case 'Dark':
-                task_delete_button.configure(fg_color='#2B2929', hover_color='#2B2929',
-                                             image=self.add_delete_image_light, compound="right")
+                change_image_theme(icon_image=self.add_setting_image_light, color='#2B2929')
 
         match event:
             case ButtonStatus.not_pressed.value:
@@ -218,10 +165,36 @@ class App(customtkinter.CTk):
 
         self.cur_task_array.append(TaskData(task_name=info, task_widget=check_task,
                                             widget_row=row, task_widget_event=bool(event),
-                                            delete_widget_button=task_delete_button))
+                                            setting_widget_button=task_setting_button,
+                                            setting_widget_button_menu=tkinter.Menu()))
 
-        task_delete_button.configure(command=lambda: self.delete_task(row))
-        setattr(self.cur_task_array[-1], 'delete_widget_button', task_delete_button)
+        def popup_menu_create(button: customtkinter.CTkButton) -> None:
+            """Would create a menu with options if button was clicked"""
+            def delete_task(widget_row: int) -> None:  # NOTE: this need to be fixed, rows in other Objects don't change!
+                """Delete task depending on current widget's row"""
+                for data in self.cur_task_array:
+                    if data.widget_row == widget_row:
+                        data.task_widget.destroy()
+                        data.setting_widget_button.destroy()
+                        data.setting_widget_button_menu.destroy()
+                        self.cur_task_array.remove(data)
+
+            popup_to_button = tkinter.Menu(self, tearoff=0)
+            popup_to_button.add_command(label="Delete task",
+                                        command=lambda: delete_task(row))
+            popup_to_button.add_command(label="Import to Archive")
+
+            try:
+                x = button.winfo_rootx()
+                y = button.winfo_rooty()
+                popup_to_button.tk_popup(x, y, 0)
+            finally:
+                setattr(self.cur_task_array[-1], 'setting_widget_button_menu', popup_to_button)
+                popup_to_button.grab_release()
+
+        task_setting_button.configure(command=lambda: popup_menu_create(task_setting_button))
+
+        setattr(self.cur_task_array[-1], 'setting_widget_button', task_setting_button)
 
     def create_task(self) -> None:
         """Create task with its info in TaskBox"""
@@ -284,22 +257,18 @@ class App(customtkinter.CTk):
         def change_images_themes() -> None:
             """Function that changes all images' version depending on appearance_mode"""
 
+            def change_color_widgets(icon_image: (PhotoImage, PhotoImage), color: str) -> None:
+                self.task_button.configure(image=icon_image[0], compound="right")
+                if self.cur_task_array:
+                    for data in self.cur_task_array:
+                        data.setting_widget_button.configure(fg_color=color, hover_color=color,
+                                                             image=icon_image[1], compound="right")
+
             match customtkinter.get_appearance_mode():
                 case 'Light':
-                    self.task_button.configure(image=self.add_list_image_dark, compound="right")
-
-                    if self.cur_task_array:
-                        for data in self.cur_task_array:
-                            data.delete_widget_button.configure(fg_color='#EBEBEB', hover_color='#EBEBEB',
-                                                                image=self.add_delete_image_dark, compound="right")
-
+                    change_color_widgets((self.add_list_image_dark, self.add_setting_image_dark), color='#EBEBEB')
                 case 'Dark':
-                    self.task_button.configure(image=self.add_list_image_light, compound="right")
-
-                    if self.cur_task_array:
-                        for data in self.cur_task_array:
-                            data.delete_widget_button.configure(fg_color='#2B2929', hover_color='#2B2929',
-                                                                image=self.add_delete_image_light, compound="right")
+                    change_color_widgets((self.add_list_image_light, self.add_setting_image_light), color='#2B2929')
 
         if self.switch_theme.get() == ButtonStatus.pressed.value:
             customtkinter.set_appearance_mode('Dark')
@@ -321,11 +290,12 @@ class App(customtkinter.CTk):
                 for t_data in self.cur_task_array:
                     t_data.task_widget_event = bool(t_data.task_widget.get())
 
-            get_check_box_values()
             if not self.cur_task_array:
                 if exists(Sprites.PATH + '/logs/save.tds'):
                     remove(Sprites.PATH + '/logs/save.tds')
                 return
+            else:
+                get_check_box_values()
 
             with open(Sprites.PATH + '/logs/save.tds', 'w') as saving_file:
                 for data in self.cur_task_array:
@@ -341,7 +311,7 @@ class App(customtkinter.CTk):
 
         for data in self.cur_task_array:
             data.task_widget.destroy()
-            data.delete_widget_button.destroy()
+            data.setting_widget_button.destroy()
 
         self.cur_task_array.clear()
 
@@ -350,6 +320,6 @@ class App(customtkinter.CTk):
         self.popupMenu.post(event.x_root, event.y_root)
 
 
-def application_ui() -> None:
+def application() -> None:
     """Start loop for an App"""
     App().mainloop()

@@ -1,4 +1,4 @@
-from front import application_ui
+from front import application
 
 
 def test():
@@ -30,5 +30,6 @@ def test():
 
 
 if __name__ == "__main__":
-    application_ui()
+    application()
     # test()
+    # popuP()
