@@ -12,7 +12,7 @@ PATH = dirname(realpath(__file__)).replace('/python files', '', 1)
 
 def reformat_file(before: str, after: str) -> None:
     """Reformat file for reading"""
-    saving_file = PATH + '/logs/save.' + before
+    saving_file = PATH + '/logs/cur_tasks_save.' + before
     base = splitext(saving_file)[0]
     rename(saving_file, base + '.' + after)
 
@@ -20,7 +20,7 @@ def reformat_file(before: str, after: str) -> None:
 def import_saved_info() -> (list, list):
     """Give an array №1 with all current task info and give array №2 with task events"""
 
-    if not (exists(PATH + '/logs/save.tds')):
+    if not (exists(PATH + '/logs/cur_tasks_save.tds')):
         return [], []
 
     reformat_file(before='tds', after='txt')
@@ -28,7 +28,7 @@ def import_saved_info() -> (list, list):
     task_array = []
     event_array = []
 
-    with open(PATH + '/logs/save.txt', 'r') as saving_file:
+    with open(PATH + '/logs/cur_tasks_save.txt', 'r') as saving_file:
         while True:
             line = saving_file.readline().replace('\n', '', 1)
             if not line:
@@ -44,20 +44,22 @@ def import_saved_info() -> (list, list):
 
 @dataclass
 class CheckBoxTaskInfo:
+    """Dataclass for keeping info about task_check_box"""
     task_name: str
     task_widget: customtkinter.CTkCheckBox
     task_widget_event: bool
 
 
 @dataclass
-class SettingButtonTaskInfo(CheckBoxTaskInfo):
+class SettingButtonTaskInfo:
+    """Dataclass for keeping info about task_setting_button"""
     setting_widget_button: customtkinter.CTkButton
     setting_widget_button_menu: tkinter.Menu
 
 
 @dataclass
-class TaskData(SettingButtonTaskInfo):
-    """Class for saving info about widget and tasks"""
+class CurTaskData(CheckBoxTaskInfo, SettingButtonTaskInfo):
+    """Child dataclass that keep all info about current tasks"""
     widget_row: int
 
 
@@ -68,7 +70,14 @@ class Sprites:
 
     @staticmethod
     def download_sprites(path_in_sprite_folder: str) -> PhotoImage:
-        return PhotoImage(openIm(Sprites.PATH + path_in_sprite_folder).resize((25, 25), ANTIALIAS))
+        return PhotoImage(openIm(Sprites.PATH + path_in_sprite_folder).resize((25, 25), ANTIALIAS))\
+
+
+
+@dataclass
+class AppSettingsInfo:
+    theme_color: str
+    appearance_mode: str
 
 
 @unique
