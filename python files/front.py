@@ -1,6 +1,5 @@
 import tkinter
 import tkinter.messagebox
-from emoji import emojize
 from back import import_saved_info, exists, CurTaskData, Sprites, ButtonStatus, customtkinter, PhotoImage
 from os import remove
 
@@ -16,7 +15,7 @@ class App(customtkinter.CTk):
         super().__init__()
 
         # region Window settings
-        self.title('TODO' + emojize(':sparkles:'))
+        self.title('TODO')
         self.geometry(f"{App.WIDTH}x{App.HEIGHT}")
         self.protocol("WM_DELETE_WINDOW", lambda: AppExit.on_closing(self))
         self.resizable(False, False)
@@ -152,7 +151,7 @@ class LeftFrame(App):
     def get_widget(root, frame_left: customtkinter.CTkFrame) -> customtkinter.CTkSwitch:
 
         label = customtkinter.CTkLabel(master=frame_left,
-                                       text='To-Do List ' + emojize(':sparkles:'),
+                                       text='To-Do List ',
                                        text_font=("Roboto Medium", -28))  # font name and size in px
         label.grid(row=0, column=0,
                    pady=10, padx=10)
@@ -225,7 +224,7 @@ class RightFrames:
         @staticmethod
         def get_widgets(root, frame_right: customtkinter.CTkFrame) -> customtkinter.CTkButton:
             label_right = customtkinter.CTkLabel(master=frame_right,
-                                                 text="Current Tasks " + emojize(':check_mark_button:'),
+                                                 text="Current Tasks ",
                                                  text_font=("Roboto Medium", -22))
             label_right.grid(row=0, column=0,
                              pady=10, padx=10)
@@ -260,7 +259,7 @@ class RightFrames:
         @staticmethod
         def get_widgets(frame_right: customtkinter.CTkFrame) -> None:
             label_right = customtkinter.CTkLabel(master=frame_right,
-                                                 text="Task Archive" + emojize(':check_mark_button:'),
+                                                 text="Task Archive",
                                                  text_font=("Roboto Medium", -22))
             label_right.grid(row=1, column=1,
                              pady=10, padx=10,
