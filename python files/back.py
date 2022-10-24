@@ -6,40 +6,63 @@ import customtkinter
 from PIL.Image import open as openIm, ANTIALIAS
 from PIL.ImageTk import PhotoImage
 from enum import Enum, unique
+from typing import Any
+
 
 PATH = dirname(realpath(__file__)).replace('/python files', '', 1)
 
 
-def reformat_file(before: str, after: str) -> None:
+def reformat_file(before: str, after: str, file_name: str) -> None:
     """Reformat file for reading"""
-    saving_file = PATH + '/logs/cur_tasks_save.' + before
+    saving_file = PATH + '/logs/' + file_name + '.' + before
     base = splitext(saving_file)[0]
     rename(saving_file, base + '.' + after)
 
 
-def import_saved_info() -> (list, list):
-    """Give an array №1 with all current task info and give array №2 with task events"""
+def import_saved_info(mode: str) -> Any:
 
-    if not (exists(PATH + '/logs/cur_tasks_save.tds')):
-        return [], []
+    match mode:
+        case 'Current Tasks':
+            """Give an array №1 with all current task info and give array №2 with task events"""
 
-    reformat_file(before='tds', after='txt')
+            if not (exists(PATH + '/logs/cur_tasks_save.tds')):
+                return [], []
 
-    task_array = []
-    event_array = []
+            reformat_file(before='tds', after='txt', file_name='cur_tasks_save')
 
-    with open(PATH + '/logs/cur_tasks_save.txt', 'r') as saving_file:
-        while True:
-            line = saving_file.readline().replace('\n', '', 1)
-            if not line:
-                break
-            task_array.append(line.split(" : ")[0])
-            event_array.append(int(line.split(" : ")[1]))
+            task_array = []
+            event_array = []
 
-    reformat_file(before='txt', after='tds')
-    saving_file.close()
+            with open(PATH + '/logs/cur_tasks_save.txt', 'r') as saving_file:
+                while True:
+                    line = saving_file.readline().replace('\n', '', 1)
+                    if not line:
+                        break
+                    task_array.append(line.split(" : ")[0])
+                    event_array.append(int(line.split(" : ")[1]))
 
-    return task_array, event_array
+            reformat_file(before='txt', after='tds', file_name='cur_tasks_save')
+            saving_file.close()
+
+            return task_array, event_array
+
+        case 'Global Tasks':
+            task_array = []
+            if not (exists(PATH + '/logs/global_tasks_save.tds')):
+                return []
+
+            reformat_file(before='tds', after='txt', file_name='global_tasks_save')
+            with open(PATH + '/logs/global_tasks_save.txt', 'r') as saving_file:
+                while True:
+                    line = saving_file.readline().replace('\n', '', 1)
+                    if not line:
+                        break
+                    task_array.append(line)
+
+            reformat_file(before='txt', after='tds', file_name='global_tasks_save')
+            saving_file.close()
+
+            return task_array
 
 
 @dataclass

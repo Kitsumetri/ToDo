@@ -1,6 +1,6 @@
 import tkinter
 import tkinter.messagebox
-from back import import_saved_info, exists, CurTaskData, Sprites, ButtonStatus, customtkinter, PhotoImage
+from back import import_saved_info, exists, CurTaskData, Sprites, ButtonStatus, customtkinter, PhotoImage, CheckBoxTaskInfo
 from os import remove
 
 
@@ -15,7 +15,7 @@ class App(customtkinter.CTk):
         super().__init__()
 
         # region Window settings
-        self.title('TODO')
+        self.title('TODO')  # emojize(':sparkles:')
         self.geometry(f"{App.WIDTH}x{App.HEIGHT}")
         self.protocol("WM_DELETE_WINDOW", lambda: AppExit.on_closing(self))
         self.resizable(False, False)
@@ -43,7 +43,6 @@ class App(customtkinter.CTk):
         self.popUp_menu = PopUpMenu.PopUpMenuForCurTasks.create_popup_menu(root=self)
         CurrentTasks.import_cur_tasks(self)
 
-    # region Methods
     @staticmethod
     def get_error(error_type: str) -> None:
         """Create new window with error message"""
@@ -90,9 +89,7 @@ class App(customtkinter.CTk):
 
         change_images_themes()
 
-    def change_right_frame(self, prev_frame: customtkinter.CTkFrame, mode: str) -> customtkinter.CTkFrame:
-
-        new_frame_right = customtkinter.CTkFrame(master=self)
+    def change_right_frame(self, prev_frame: customtkinter.CTkFrame, mode: str) -> None:
 
         match mode:
             case 'Current Tasks':
@@ -103,11 +100,18 @@ class App(customtkinter.CTk):
 
                 CurrentTasks.save_cur_tasks()
                 CurrentTasks.import_cur_tasks(self)
+                self.geometry(f"{App.WIDTH}x{App.HEIGHT}")
+                self.resizable(False, False)
+
             case 'Task Archive':
                 prev_frame.grid_remove()
                 self.frame_right = RightFrames.RightFrameTaskArchive.create_frame(root=self)
                 self.popUp_menu = PopUpMenu.PopUpMenuForTaskArchive.create_popup_menu(root=self)
                 RightFrames.RightFrameTaskArchive.get_widgets(self.frame_right)
+                TaskArchive.save_task_archive()
+                TaskArchive.import_global_tasks(root=self)
+
+                self.resizable(True, True)
             case 'Notebook':
                 prev_frame.grid_remove()
                 self.frame_right = RightFrames.RightFrameNotebook.create_frame(root=self)
@@ -118,8 +122,6 @@ class App(customtkinter.CTk):
                 prev_frame.grid_remove()
                 self.frame_right = RightFrames.RightFrameNotebook.create_frame(root=self)
 
-        return new_frame_right
-
     def get_screen_points(self, event) -> None:
         """Method that allow to use 'right button menu'"""
         self.popUp_menu.post(event.x_root, event.y_root)
@@ -127,6 +129,7 @@ class App(customtkinter.CTk):
 
 class LeftFrame(App):
     """Class for creating left frame and add widgets on it"""
+
     def __int__(self, root):
         super().__init__()
         self.root = root
@@ -149,7 +152,6 @@ class LeftFrame(App):
 
     @staticmethod
     def get_widget(root, frame_left: customtkinter.CTkFrame) -> customtkinter.CTkSwitch:
-
         label = customtkinter.CTkLabel(master=frame_left,
                                        text='To-Do List ',
                                        text_font=("Roboto Medium", -28))  # font name and size in px
@@ -204,6 +206,7 @@ class LeftFrame(App):
 
 class RightFrames:
     """All right frames and widgets in a one class"""
+
     class RightFrameCurrentTasks(App):
         def __int__(self, root) -> None:
             super().__init__()
@@ -224,7 +227,7 @@ class RightFrames:
         @staticmethod
         def get_widgets(root, frame_right: customtkinter.CTkFrame) -> customtkinter.CTkButton:
             label_right = customtkinter.CTkLabel(master=frame_right,
-                                                 text="Current Tasks ",
+                                                 text="Current Tasks ",  # emojize(':check_mark_button:'
                                                  text_font=("Roboto Medium", -22))
             label_right.grid(row=0, column=0,
                              pady=10, padx=10)
@@ -319,7 +322,6 @@ class AppSettings(App):
 
 
 class CurrentTasks(App):
-
     cur_task_array = []
 
     def __init__(self, root) -> None:
@@ -369,9 +371,10 @@ class CurrentTasks(App):
                                                        setting_widget_button=task_setting_button,
                                                        setting_widget_button_menu=tkinter.Menu()))
 
-        task_setting_button.configure(command=lambda: PopUpMenu.PopUpMenuTaskSettings.create_popup_menu(button=task_setting_button,
-                                                                                                        root=root,
-                                                                                                        row=row))
+        task_setting_button.configure(
+            command=lambda: PopUpMenu.PopUpMenuTaskSettings.create_popup_menu(button=task_setting_button,
+                                                                              root=root,
+                                                                              row=row))
 
         setattr(CurrentTasks.cur_task_array[-1], 'setting_widget_button', task_setting_button)
 
@@ -411,7 +414,7 @@ class CurrentTasks(App):
     def import_cur_tasks(root) -> None:
         """Import current task info from cur_tasks_save.tds"""
 
-        info_arr, event_arr = import_saved_info()
+        info_arr, event_arr = import_saved_info(mode='Current Tasks')
         row = 1
         while row <= len(info_arr):
             CurrentTasks.place_task_widget(root, info=info_arr[row - 1], row=row, event=event_arr[row - 1])
@@ -445,17 +448,69 @@ class CurrentTasks(App):
         CurrentTasks.cur_task_array.clear()
 
 
-class ArchiveTasks(App):
-
+class TaskArchive(App):
     archive_tasks_array = []
 
     def __init__(self, root) -> None:
         super().__init__()
         self.root = root
 
+    @staticmethod
+    def import_tasks_from_current(root, widget_row) -> None:
+        """Import task info to Archive container"""
+        for data in CurrentTasks.cur_task_array:
+            if data.widget_row == widget_row:
+                copy_data = data
+                PopUpMenu.PopUpMenuTaskSettings.delete_task(widget_row)
+                copy_data.widget_row = len(TaskArchive.archive_tasks_array) + 1
+                TaskArchive.archive_tasks_array.append(copy_data)
+
+    @staticmethod
+    def place_widgets(root):
+
+        row = 2
+
+        for data in TaskArchive.archive_tasks_array:
+            check_task = customtkinter.CTkCheckBox(master=root.frame_right,
+                                                   text=data.task_name)
+            check_task.grid(row=row, column=0,
+                            pady=10, padx=20,
+                            sticky='w')
+            row += 1
+
+    @staticmethod  # TODO create method
+    def export_tasks_to_current(root, widget_row) -> None:
+        pass
+
+    @staticmethod
+    def save_task_archive() -> None:
+        if not TaskArchive.archive_tasks_array:
+            if exists(Sprites.PATH + '/logs/global_tasks_save.tds'):
+                remove(Sprites.PATH + '/logs/global_tasks_save.tds')
+            return
+
+        with open(Sprites.PATH + '/logs/global_tasks_save.tds', 'w') as saving_file:
+            for data in TaskArchive.archive_tasks_array:
+                saving_file.write(data.task_name + '\n')
+        saving_file.close()
+
+        TaskArchive.archive_tasks_array.clear()
+
+    @staticmethod
+    def import_global_tasks(root):
+        import_info = import_saved_info(mode='Global Tasks')
+
+        for data in import_info:
+            TaskArchive.archive_tasks_array.append(CheckBoxTaskInfo(task_name=data,
+                                                                    task_widget=customtkinter.CTkCheckBox(),
+                                                                    task_widget_event=False))
+
+        TaskArchive.place_widgets(root)
+
 
 class PopUpMenu:
     """All classes that are related to PopUpMenu"""
+
     class PopUpMenuForCurTasks(App):
         def __init__(self, root):
             super().__init__()
@@ -523,18 +578,14 @@ class PopUpMenu:
                     CurrentTasks.cur_task_array.remove(data)
 
         @staticmethod
-        def import_to_archive() -> None:
-            """Import task info to Archive container"""
-            pass
-
-        @staticmethod
         def create_popup_menu(root, button: customtkinter.CTkButton, row: int) -> None:
             """Will create a menu when button is pressed"""
             popup_to_button = tkinter.Menu(root, tearoff=0)
             popup_to_button.add_command(label="Delete task",
                                         command=lambda: PopUpMenu.PopUpMenuTaskSettings.delete_task(row))
             popup_to_button.add_command(label="Import to Archive",
-                                        command=lambda: PopUpMenu.PopUpMenuTaskSettings.import_to_archive)
+                                        command=lambda: TaskArchive.import_tasks_from_current(root=root,
+                                                                                              widget_row=row))
 
             try:
                 x = button.winfo_rootx()
@@ -548,6 +599,7 @@ class PopUpMenu:
 
 class AppExit(App):
     """Class for auto-saving current tasks and closing the app"""
+
     def __init__(self, root) -> None:
         super().__init__()
         self.root = root
@@ -555,7 +607,10 @@ class AppExit(App):
     @staticmethod
     def on_closing(root) -> None:
         """Method for closing app and saving information"""
+
         CurrentTasks.save_cur_tasks()
+        TaskArchive.save_task_archive()
+
         root.destroy()
 
 
