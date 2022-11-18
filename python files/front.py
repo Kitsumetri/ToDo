@@ -1,6 +1,8 @@
 import tkinter
 import tkinter.messagebox
-from back import import_saved_info, exists, CurTaskData, Sprites, ButtonStatus, customtkinter, PhotoImage, CheckBoxTaskInfo
+from back import import_saved_info, exists, CurTaskData,\
+    Sprites, ButtonStatus, customtkinter,\
+    PhotoImage, CheckBoxTaskInfo
 from os import remove
 
 
@@ -107,11 +109,15 @@ class App(customtkinter.CTk):
                 prev_frame.grid_remove()
                 self.frame_right = RightFrames.RightFrameTaskArchive.create_frame(root=self)
                 self.popUp_menu = PopUpMenu.PopUpMenuForTaskArchive.create_popup_menu(root=self)
-                RightFrames.RightFrameTaskArchive.get_widgets(self.frame_right)
+                self.task_button = RightFrames.RightFrameTaskArchive.get_widgets(self, self.frame_right)
+                RightFrames.RightFrameTaskArchive.get_widgets(self, self.frame_right)
                 TaskArchive.save_task_archive()
                 TaskArchive.import_global_tasks(root=self)
 
+                self.geometry(f"{800}x{600}")
+
                 self.resizable(True, True)
+
             case 'Notebook':
                 prev_frame.grid_remove()
                 self.frame_right = RightFrames.RightFrameNotebook.create_frame(root=self)
@@ -260,13 +266,23 @@ class RightFrames:
             return frame_right
 
         @staticmethod
-        def get_widgets(frame_right: customtkinter.CTkFrame) -> None:
+        def get_widgets(root, frame_right: customtkinter.CTkFrame) -> customtkinter.CTkButton:
             label_right = customtkinter.CTkLabel(master=frame_right,
                                                  text="Task Archive",
                                                  text_font=("Roboto Medium", -22))
             label_right.grid(row=1, column=1,
                              pady=10, padx=10,
                              sticky='nswe')
+
+            task_button = customtkinter.CTkButton(master=frame_right,
+                                                  text="Create Task", text_font=("Roboto Medium", -19),
+                                                  width=190, height=40,
+                                                  command=lambda: TaskArchive.place_widgets(root))
+            task_button.grid(row=0, column=1, columnspan=2,
+                             padx=20, pady=10,
+                             sticky='s')
+
+            return task_button
 
     class RightFrameNotebook(App):
         def __int__(self, root) -> None:
